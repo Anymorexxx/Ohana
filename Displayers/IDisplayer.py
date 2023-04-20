@@ -1,36 +1,37 @@
 from discord import Message, TextChannel, Role, Member
 from discord.ext import commands
 
+
 class IDisplayer:
-    async def MessageDeleted(self, message : Message):
-        pass
-    
-    async def MessageEdit(self, message_before : Message, message_after : Message):
+    async def message_deleted(self, message: Message):
         pass
 
-    async def ChanelCreated(self, channel : TextChannel):
+    async def message_edited(self, message_before: Message, message_after: Message):
         pass
 
-    async def ChanelDeleted(self, channel : TextChannel):
+    async def chanel_created(self, channel: TextChannel):
         pass
 
-    async def RoleDelete(self, role : Role):
+    async def chanel_deleted(self, channel: TextChannel):
         pass
 
-    async def RoleCreate(self, role : Role):
+    async def role_deleted(self, role: Role):
         pass
 
-    async def RoleEdit(self, befor : Role, after : Role):
+    async def role_created(self, role: Role):
         pass
 
-    async def MemberNicknameUpdated(self, befor : Member, after : Member, entry):
+    async def role_edited(self, before: Role, after: Role):
         pass
 
-    async def MemberAddedRole(self, added_role: set[Role], member: Member):
+    async def member_nickname_updated(self, before: Member, after: Member, entry):
         pass
 
-    async def MemberRemovedRoles(self, removed_role: set[Role], member: Member):
+    async def member_added_roles(self, added_roles: set[Role], member: Member):
         pass
 
-    async def Clear(self, ctx, cls):
+    async def member_removed_roles(self, removed_roles: set[Role], member: Member):
+        pass
+
+    async def clear(self, ctx, cls):
         pass
