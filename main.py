@@ -14,7 +14,11 @@ chat = (settings[Settings_enum.CHAT.value])
 server = (settings[Settings_enum.SERVER.value])
 moder = (settings[Settings_enum.MODER.value])
 log = (settings[Settings_enum.LOG.value])
+new = (settings[Settings_enum.NEW.value])
 color = settings[Settings_enum.COLOR.value]
+data = settings[Settings_enum.DATA.value]
+default_role = settings[Settings_enum.ROLE.value]
+creator = settings[Settings_enum.CREATOR.value]
 displayer: IDisplayer = DefaultDisplayer(bot, chat, server, color, moder, log)
 
 
@@ -124,13 +128,65 @@ async def update_member_roles(added_roles: set[discord.Role], removed_roles: set
             await displayer.member_removed_roles(removed_roles, after)
 
 
-# команды
+# команды - логи
 @bot.command(name='clear')
 @commands.has_permissions(view_audit_log=True)
 async def clear(ctx, cls=100):
     await ctx.message.delete()
     await ctx.channel.purge(limit=cls)
     await displayer.clear(ctx, cls)
+
+
+@bot.event
+async def on_member_join(member: discord.Member = None):
+    print('Пчел присоединяется к серверу.')
+    channel = bot.get_channel(new)
+    date_format = data
+    guild = member.guild
+    invites = await guild.invites()
+    invite = invites[len(invites) - 1]
+    embed = discord.Embed(color=color,
+                          description=f"""**{member.mention} || `{member}`\nприсоединяется к серверу.**\n\n> <:linkk:1099388948893151363> Ссылка: `{invite.url}`\n> <:linkcreater:1099389532673151087> Создатель: `{invite.inviter}`\n> <:freeiconprofiles:1099390379549278328> Кол-во использований: `{invite.uses}`""")
+    embed.set_image(url='https://cdn.discordapp.com/attachments/1099403215985979472/1099403612947492985/2GxE5Kn.gif')
+    embed.add_field(name='ID:', value=f'> `{member.id}`', inline=True)
+    embed.add_field(name='Дата регистрации:', value=f'> `{member.created_at.strftime(date_format)}`', inline=True)
+    embed.set_thumbnail(url=member.avatar)
+    await channel.send(embed=embed)
+    role = member.guild.get_role(default_role)
+    await member.add_roles(role)
+
+
+@bot.event
+async def on_member_remove(member: discord.Member = None):
+    channel = bot.get_channel(new)
+    date_format = data
+    embed = discord.Embed(
+        color=color,
+        description=f"""**{member.mention} || `{member}` покидает сервер.**""")
+    embed.set_image(url='https://cdn.discordapp.com/attachments/1099403215985979472/1099403612947492985/2GxE5Kn.gif')
+    embed.add_field(name='ID:', value=f'> `{member.id}`', inline=True)
+    embed.add_field(name='Дата регистрации:', value=f'> `{member.created_at.strftime(date_format)}`', inline=True)
+    embed.set_thumbnail(url=member.avatar)
+    await channel.send(embed=embed)
+
+
+@bot.command(name='msg')
+async def msg(ctx, index: int, *, text: str):
+    if isinstance(ctx.channel, discord.DMChannel) and ctx.message.author.id == creator:
+        user = bot.get_user(339373027324329984)
+        embed = discord.Embed(description=f'**от <@{ctx.message.author.id}>**', color=color)
+        embed.add_field(name='Сообщение:', value=f'```fix\n{text}\n```', inline=False)
+        embed.add_field(name='ID пользователя:', value=f'```fix\n{ctx.message.author.id}\n```', inline=True)
+        await user.send(embed=embed)
+        #await ctx.message.author.send(f'**Отправлено {user}**')
+
+@bot.event
+async def on_message(message):
+    if message.author is not bot.user and message.author.id != creator:
+        if isinstance(message.channel, discord.DMChannel):
+            qt = bot.get_user(creator)
+            await qt.send(f'**{message.author.mention}:** ' + message.content)
+    await bot.process_commands(message)
 
 
 bot.run(settings[Settings_enum.TOKEN.value])

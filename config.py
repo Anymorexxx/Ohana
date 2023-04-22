@@ -13,10 +13,12 @@ settings = {
     'server': 1091658183510085662,
     'moder': 1092378054585757706,
     'log': 1096793524877393933,
+    'new': 1099396359884378205,
     'color': 0x2e3235,
     'data': '%d.%m.%Y %H:%M:%S',
-
-    'threshold': 50
+    'defaultRole': 1097949456030253096,
+    'threshold': 50,
+    'creator': 503605638484721676
 }
 
 
@@ -32,5 +34,8 @@ class SettingsEnum(Enum):
     SERVER = 'server'
     MODER = 'moder'
     LOG = 'log'
+    NEW = 'new'
     COLOR = 'color'
     DATA = 'data'
+    ROLE = 'defaultRole'
+    CREATOR = 'creator'
