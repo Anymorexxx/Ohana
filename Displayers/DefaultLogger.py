@@ -1,12 +1,12 @@
 import discord
-from Displayers.IDisplayer import IDisplayer
+from Displayers.ILogger import ILogger
 from discord import Message, TextChannel
 from discord.ext import commands
 import datetime
 from datetime import datetime
 
 
-async def show_moder_updated_role(changed_role: discord.Role, embed: discord.Embed, before: discord.Role):
+async def show_moder_updated_role(changed_role: discord.Role, embed: discord.Embed, before: discord.Member):
     async for entry in changed_role.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_role_update):
         if entry.target == before:
             embed.add_field(name='Роль:', value=f'```{changed_role}```', inline=True)
@@ -14,7 +14,7 @@ async def show_moder_updated_role(changed_role: discord.Role, embed: discord.Emb
             embed.add_field(name='Модератор:', value=f'```{entry.user.name}```', inline=False)
 
 
-class DefaultDisplayer(IDisplayer):
+class DefaultLogger(ILogger):
     def __init__(self, bot: commands.Bot, chat: int, server: int, color, moder: int, log: int):
         self.bot = bot
         self.chat = chat

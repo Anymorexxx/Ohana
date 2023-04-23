@@ -1,7 +1,9 @@
+import math
+
 import discord
 from discord.ext import commands
-from Displayers.DefaultDisplayer import DefaultDisplayer
-from Displayers.IDisplayer import IDisplayer
+from Displayers.DefaultLogger import DefaultLogger
+from Displayers.ILogger import ILogger
 from config import settings, SettingsEnum as Settings_enum
 from database import Session
 import models
@@ -19,7 +21,7 @@ color = settings[Settings_enum.COLOR.value]
 data = settings[Settings_enum.DATA.value]
 default_role = settings[Settings_enum.ROLE.value]
 creator = settings[Settings_enum.CREATOR.value]
-displayer: IDisplayer = DefaultDisplayer(bot, chat, server, color, moder, log)
+displayer: ILogger = DefaultLogger(bot, chat, server, color, moder, log)
 
 
 def add_reputation(member: discord.Member, amount: int):
@@ -173,19 +175,28 @@ async def on_member_remove(member: discord.Member = None):
 @bot.command(name='msg')
 async def msg(ctx, index: int, *, text: str):
     if isinstance(ctx.channel, discord.DMChannel) and ctx.message.author.id == creator:
-        user = bot.get_user(339373027324329984)
-        embed = discord.Embed(description=f'**от <@{ctx.message.author.id}>**', color=color)
-        embed.add_field(name='Сообщение:', value=f'```fix\n{text}\n```', inline=False)
-        embed.add_field(name='ID пользователя:', value=f'```fix\n{ctx.message.author.id}\n```', inline=True)
-        await user.send(embed=embed)
-        #await ctx.message.author.send(f'**Отправлено {user}**')
+        user = bot.get_user(index)
+        if user:
+            embed = discord.Embed(description=f'**Сообщение от <@{ctx.message.author.id}>**', color=color)
+            embed.add_field(name='', value=f'```fix\n{text}\n```', inline=False)
+            #embed.add_field(name='ID пользователя:', value=f'```fix\n{ctx.message.author.id}\n```', inline=True)
+            await user.send(embed=embed)
+            await ctx.message.author.send(f'**Отправлено {user}**')
 
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     if message.author is not bot.user and message.author.id != creator:
         if isinstance(message.channel, discord.DMChannel):
             qt = bot.get_user(creator)
-            await qt.send(f'**{message.author.mention}:** ' + message.content)
+            chunks = [message.content[i:i+1000] for i in range(0, len(message.content), 1000)]
+            embed = discord.Embed(description=f'**Сообщение от {message.author.mention}**', color=color)
+            for chunk in chunks:
+                embed.add_field(name='', value=f'```fix\n{chunk}\n```', inline=False)
+            embed.add_field(name='ID пользователя:', value=f'```fix\n{message.author.id}\n```', inline=True)
+            await qt.send(embed=embed)
+
+            emb = discord.Embed(description=f'```fix\n Ваше сообщение отправлено, ожидайте, скоро на него ответит модератор\n```', color=color)
+            await message.author.send(embed=emb)
     await bot.process_commands(message)
 
 
