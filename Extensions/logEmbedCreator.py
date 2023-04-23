@@ -1,9 +1,5 @@
 from datetime import datetime
-
 import discord
-from discord import Message, TextChannel
-from discord.ext import commands
-
 
 def create_message_title_embed(title: str, author, author_id, chanel_id, color) -> discord.Embed:
     embed = discord.Embed(title=title.format(author),

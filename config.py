@@ -17,8 +17,12 @@ settings = {
     'color': 0x2e3235,
     'data': '%d.%m.%Y %H:%M:%S',
     'defaultRole': 1097949456030253096,
-    'threshold': 50,
-    'creator': 503605638484721676
+    'threshold': 350,
+    'creator': 503605638484721676,
+    'points_by_word': 1,
+    'min_word_size': 4,
+    'max_word_size': 13,
+    'points_by_second': 1/(120*60)
 }
 
 
@@ -39,3 +43,8 @@ class SettingsEnum(Enum):
     DATA = 'data'
     ROLE = 'defaultRole'
     CREATOR = 'creator'
+    POINTS_BY_WORD = 'points_by_word'
+    MIN_WORD_SIZE = 'min_word_size'
+    MAX_WORD_SIZE = 'max_word_size'
+    POINTS_BY_SECOND = 'points_by_second'
+

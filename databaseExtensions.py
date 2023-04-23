@@ -71,10 +71,11 @@ def subtract_reputation_from_member(member: Member, points: int, threshold: int)
 def try_get_reputation(member: Member) -> UserReputation:
     user = Session.query(Users).filter_by(user_id=member.id).first()
     server = Session.query(Servers).filter_by(server_id=member.guild.id).first()
-    reputation = Session.query(UserReputation).filter_by(user=user, server=server).first()
+    reputation = Session.query(UserReputation).filter_by(user_ID=user.ID, server_ID=server.ID).one_or_none()
     if reputation is None:
-        reputation = UserReputation(user=user, server=server, reputation=0, level=0)
-    Session.add(reputation)
+        reputation = UserReputation(user_ID=user.ID, server_ID=server.ID, reputation=0, level=0)
+        user.reputation.append(reputation)
+        Session.add(reputation)
     return reputation
 
 
@@ -156,9 +157,9 @@ def try_add_roles_to_member(member: Member, roles: set[Role]):
 def try_add_roles_to_user_model(user_model: Users, roles: set[Role]) -> bool:
     if roles:
         for role in roles:
-            addedRole = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
-            if addedRole is not None:
-                user_model.roles.append(addedRole)
+            added_role = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
+            if added_role is not None:
+                user_model.roles.append(added_role)
         return True
     return False
 
@@ -166,8 +167,8 @@ def try_add_roles_to_user_model(user_model: Users, roles: set[Role]) -> bool:
 def try_remove_roles_from_member(user_model: Users, roles: set[Role]) -> bool:
     if roles:
         for role in roles:
-            removedRole = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
-            if removedRole is not None:
-                user_model.roles.remove(removedRole)
+            removed_role = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
+            if removed_role is not None:
+                user_model.roles.remove(removed_role)
         return True
     return False

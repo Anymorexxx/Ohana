@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 
@@ -10,6 +12,9 @@ from config import settings, SettingsEnum as Settings_enum
 from database import Session
 import models
 import databaseExtensions as Extension
+from reputation import User
+
+users = {}
 
 bot = commands.Bot(command_prefix=".", intents=discord.Intents.all())
 bot.remove_command('help')
@@ -23,6 +28,10 @@ color = settings[Settings_enum.COLOR.value]
 data = settings[Settings_enum.DATA.value]
 default_role = settings[Settings_enum.ROLE.value]
 creator = settings[Settings_enum.CREATOR.value]
+points_by_word = settings[Settings_enum.POINTS_BY_WORD.value]
+min_word_size = settings[Settings_enum.MIN_WORD_SIZE.value]
+max_word_size = settings[Settings_enum.MAX_WORD_SIZE.value]
+points_by_second = settings[Settings_enum.POINTS_BY_SECOND.value]
 logger: ILogger = DefaultLogger(bot, chat, server, moder, log, color)
 command: ICommands = DefaultCommands(bot, moder, color)
 
@@ -100,19 +109,11 @@ async def on_guild_role_update(before, after):
 async def on_member_join(member: discord.Member = None):
     print('Пчел присоединяется к серверу.')
     channel = bot.get_channel(new)
-    date_format = data
     guild = member.guild
     invites = await guild.invites()
     invite = invites[len(invites) - 1]
-    embed = discord.Embed(color=color,
-                          description=f"""**{member.mention} || `{member}`\nприсоединяется к серверу.**\n\n> 
-                          <:linkk:1099388948893151363> Ссылка: `{invite.url}`\n> <:linkcreater:1099389532673151087> 
-                          Создатель: `{invite.inviter}`\n> <:freeiconprofiles:1099390379549278328> Кол-во 
-                          использований: `{invite.uses}`""")
-    embed.set_image(url='https://cdn.discordapp.com/attachments/1099403215985979472/1099403612947492985/2GxE5Kn.gif')
-    embed.add_field(name='ID:', value=f'> `{member.id}`', inline=True)
-    embed.add_field(name='Дата регистрации:', value=f'> `{member.created_at.strftime(date_format)}`', inline=True)
-    embed.set_thumbnail(url=member.avatar)
+    from Extensions.messageEmbedCreator import create_member_join_embed
+    embed = create_member_join_embed(member, invite, color)
     await channel.send(embed=embed)
     role = member.guild.get_role(default_role)
     databaseExtensions.try_add_member_to_server(member)
@@ -122,14 +123,8 @@ async def on_member_join(member: discord.Member = None):
 @bot.event
 async def on_member_remove(member: discord.Member = None):
     channel = bot.get_channel(new)
-    date_format = data
-    embed = discord.Embed(
-        color=color,
-        description=f"""**{member.mention} || `{member}` покидает сервер.**""")
-    embed.set_image(url='https://cdn.discordapp.com/attachments/1099403215985979472/1099403612947492985/2GxE5Kn.gif')
-    embed.add_field(name='ID:', value=f'> `{member.id}`', inline=True)
-    embed.add_field(name='Дата регистрации:', value=f'> `{member.created_at.strftime(date_format)}`', inline=True)
-    embed.set_thumbnail(url=member.avatar)
+    from Extensions.messageEmbedCreator import create_member_remove_embed
+    embed = create_member_remove_embed(member, color)
     databaseExtensions.try_remove_member_from_server(member)
     await channel.send(embed=embed)
 
@@ -184,7 +179,6 @@ async def msg(ctx, index: int, *, text: str):
         if user:
             embed = discord.Embed(description=f'**Сообщение от <@{ctx.message.author.id}>**', color=color)
             embed.add_field(name='', value=f'```fix\n{text}\n```', inline=False)
-            # embed.add_field(name='ID пользователя:', value=f'```fix\n{ctx.message.author.id}\n```', inline=True)
             await user.send(embed=embed)
             await ctx.message.author.send(f'**Отправлено {user}**')
 
@@ -192,20 +186,69 @@ async def msg(ctx, index: int, *, text: str):
 @bot.event
 async def on_message(message: discord.Message):
     if message.author is not bot.user and message.author.id != creator:
-        if isinstance(message.channel, discord.DMChannel):
-            qt = bot.get_user(creator)
-            chunks = [message.content[i:i + 1000] for i in range(0, len(message.content), 1000)]
-            embed = discord.Embed(description=f'**Сообщение от {message.author.mention}**', color=color)
-            for chunk in chunks:
-                embed.add_field(name='', value=f'```fix\n{chunk}\n```', inline=False)
-            embed.add_field(name='ID пользователя:', value=f'```fix\n{message.author.id}\n```', inline=True)
-            await qt.send(embed=embed)
+        if message.guild is None:
+            if isinstance(message.channel, discord.DMChannel):
+                qt = bot.get_user(creator)
+                chunks = [message.content[i:i + 1000] for i in range(0, len(message.content), 1000)]
+                embed = discord.Embed(description=f'**Сообщение от {message.author.mention}**', color=color)
+                for chunk in chunks:
+                    embed.add_field(name='', value=f'```fix\n{chunk}\n```', inline=False)
+                embed.add_field(name='ID пользователя:', value=f'```fix\n{message.author.id}\n```', inline=True)
+                await asyncio.sleep(3)
+                await qt.send(embed=embed)
 
-            emb = discord.Embed(
-                description=f'```fix\n Ваше сообщение отправлено, ожидайте, скоро на него ответит модератор\n```',
-                color=color)
-            await message.author.send(embed=emb)
+                bot_message = await message.channel.send('Loading…. █[][][][][][][][][] 10%')
+                await asyncio.sleep(1)
+                await bot_message.edit(content="Loading…. █████[][][][][] 50%")
+                await asyncio.sleep(1)
+                await bot_message.edit(content="Loading…. ████████[][] 80%")
+                await asyncio.sleep(1)
+                await bot_message.edit(content="Loading… ██████████████] 99%")
+                await asyncio.sleep(1)
+                await bot_message.edit(content="*•.¸♡ meow! ♡¸.•*")
+                embed = discord.Embed(
+                    description=f'```fix\n Ваше сообщение отправлено, ожидайте, скоро на него ответит модератор\n```',
+                    color=color)
+                await bot_message.edit(embed=embed)
+
+        else:
+            await counting_reputation_by_message(message.author, message.content)
+
     await bot.process_commands(message)
+
+
+@bot.event
+async def counting_reputation_by_message(member, content):
+    if member.bot:
+        return
+    words = content.split(' ')
+    points = 0
+    for word in words:
+        len_word = len(word)
+        if min_word_size <= len_word <= max_word_size:
+            points += settings[Settings_enum.POINTS_BY_WORD.value]
+    if points > 0:
+        add_reputation(member, points)
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+    if before.channel is None and after.channel is not None:
+        # пользователь подключился к голосовому каналу
+        if member.id not in users:
+            users[member.id] = User(member)
+    elif before.channel is not None and after.channel is None:
+        # пользователь отключился от голосового канала
+        if member.id in users:
+            print(f"{member} провел {users[member.id].get_total_time()} на канале")
+            add_reputation(member, users[member.id].get_total_time() * points_by_second)
+            del users[member.id]
+    elif before.channel is not None and after.channel is not None and before.channel != after.channel:
+        # пользователь переключился на другой голосовой канал
+        if member.id in users:
+            print(f"{member} провел {users[member.id].get_total_time()} на канале")
 
 
 bot.run(settings[Settings_enum.TOKEN.value])
