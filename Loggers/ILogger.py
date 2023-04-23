@@ -1,5 +1,8 @@
-from discord import Message, TextChannel, Role, Member
+from discord import Message, Role, Member
+from discord.abc import GuildChannel
 from abc import ABC, abstractmethod
+
+
 class ILogger(ABC):
     @abstractmethod
     async def message_deleted(self, message: Message):
@@ -10,11 +13,11 @@ class ILogger(ABC):
         pass
 
     @abstractmethod
-    async def chanel_created(self, channel: TextChannel):
+    async def chanel_created(self, channel: GuildChannel):
         pass
 
     @abstractmethod
-    async def chanel_deleted(self, channel: TextChannel):
+    async def chanel_deleted(self, channel: GuildChannel):
         pass
 
     @abstractmethod
@@ -39,8 +42,4 @@ class ILogger(ABC):
 
     @abstractmethod
     async def member_removed_roles(self, removed_roles: set[Role], member: Member):
-        pass
-
-    @abstractmethod
-    async def clear(self, ctx, cls):
         pass

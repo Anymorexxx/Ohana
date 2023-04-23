@@ -29,7 +29,7 @@ def add_new_role(role: Role) -> Roles:
 
 def add_new_member(member: Member) -> Users:
     member_model = add_member_to_data_base(member)
-    add_member_to_server(member_model, member.guild.id)
+    add_member_model_to_server(member_model, member.guild.id)
     create_member_relation_ship(member, member_model)
     return member_model
 
@@ -49,19 +49,33 @@ def add_member_to_data_base(member: Member) -> Users:
 
 
 def add_reputation_to_member(member: Member, points: int, threshold: int):
-    user = Session.query(Users).filter_by(user_id=member.id).first()
-    server = Session.query(Servers).filter_by(server_id=member.guild.id).first()
-    reputation = Session.query(UserReputation).filter_by(user=user, server=server).first()
-    if reputation is None:
-        reputation = UserReputation(user=user, server=server, reputation=0, level=0)
-        Session.add(reputation)
-
+    reputation = try_get_reputation(member)
     reputation.reputation += points
     if reputation.reputation >= threshold * reputation.level + 1:
         reputation.level += 1
         reputation.reputation = 0
 
     Session.commit()
+
+
+def subtract_reputation_from_member(member: Member, points: int, threshold: int):
+    reputation = try_get_reputation(member)
+    reputation.reputation -= points
+    if reputation.reputation < threshold * reputation.level:
+        reputation.level -= 1
+        reputation.reputation = 0
+
+    Session.commit()
+
+
+def try_get_reputation(member: Member) -> UserReputation:
+    user = Session.query(Users).filter_by(user_id=member.id).first()
+    server = Session.query(Servers).filter_by(server_id=member.guild.id).first()
+    reputation = Session.query(UserReputation).filter_by(user=user, server=server).first()
+    if reputation is None:
+        reputation = UserReputation(user=user, server=server, reputation=0, level=0)
+    Session.add(reputation)
+    return reputation
 
 
 def remove_server_role(role: Role):
@@ -86,43 +100,74 @@ def create_role_relation_ship(role: Role, role_model):
 
 
 def create_member_relation_ship(member: Member, member_model):
-    add_member_to_server(member_model, member.guild.id)
+    add_member_model_to_server(member_model, member.guild.id)
     for role in member.roles:
         role_model = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
         if role_model is None:
             role_model = add_new_role(role)
-        member_model.roles.append(role_model)
+
+        if role_model not in member_model.roles:
+            member_model.roles.append(role_model)
 
     Session.commit()
 
 
-def add_member_to_server(model: Users, server_id):
+def add_member_model_to_server(user_model: Users, server_id):
     server = Session.query(Servers).filter_by(server_id=server_id).one_or_none()
     if server is not None:
-        server.users.append(model)
+        if user_model not in server.users:
+            server.users.append(user_model)
 
 
-def add_role_model_to_server(model: Roles, server_id):
+def try_add_member_to_server(member: Member):
+    server = Session.query(Servers).filter_by(server_id=member.guild.id).one_or_none()
+    if server is not None:
+        user = Session.query(Users).filter_by(user_id=member.id).one_or_none()
+        if user is None:
+            user = add_new_member(member)
+        server.users.append(user)
+
+
+def try_remove_member_from_server(member: Member):
+    server = Session.query(Servers).filter_by(server_id=member.guild.id).one_or_none()
+    if server is not None:
+        user = Session.query(Users).filter_by(user_id=member.id).one_or_none()
+        if user is not None:
+            server.users.remove(user)
+            for role in server.roles:
+                if role in user.roles:
+                    user.roles.remove(role)
+
+
+def add_role_model_to_server(role_model: Roles, server_id):
     server = Session.query(Servers).filter_by(server_id=server_id).one_or_none()
     if server is not None:
-        server.roles.append(model)
+        if role_model not in server.users:
+            server.roles.append(role_model)
 
 
-def try_add_roles_to_member(member: Users, roles: set[Role]) -> bool:
+def try_add_roles_to_member(member: Member, roles: set[Role]):
+    user_model = Session.query(Users).filter_by(user_id=member.id).one_or_none()
+    if user_model is None:
+        user_model = add_new_member(member)
+    try_add_roles_to_user_model(user_model, roles)
+
+
+def try_add_roles_to_user_model(user_model: Users, roles: set[Role]) -> bool:
     if roles:
         for role in roles:
             addedRole = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
             if addedRole is not None:
-                member.roles.append(addedRole)
+                user_model.roles.append(addedRole)
         return True
     return False
 
 
-def try_remove_roles_to_member(member: Users, roles: set[Role]) -> bool:
+def try_remove_roles_from_member(user_model: Users, roles: set[Role]) -> bool:
     if roles:
         for role in roles:
             removedRole = Session.query(Roles).filter_by(role_id=role.id).one_or_none()
             if removedRole is not None:
-                member.roles.remove(removedRole)
+                user_model.roles.remove(removedRole)
         return True
     return False
