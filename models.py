@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from database import Model
 from sqlalchemy.orm import relationship
+
+from database import Model
 
 
 class UsersRoles(Model):
@@ -19,12 +20,12 @@ class UsersServers(Model):
     server_ID = Column(Integer, ForeignKey('servers.ID', ondelete='CASCADE'))
 
 
-class RolesServers(Model):
-    __tablename__ = "roles_servers"
-
-    ID = Column(Integer, primary_key=True, autoincrement=True)
-    role_ID = Column(Integer, ForeignKey('roles.ID', ondelete='CASCADE'))
-    server_ID = Column(Integer, ForeignKey('servers.ID', ondelete='CASCADE'))
+# class RolesServers(Model):
+#    __tablename__ = "roles_servers"
+#
+#    ID = Column(Integer, primary_key=True, autoincrement=True)
+#    role_ID = Column(Integer, ForeignKey('roles.ID', ondelete='CASCADE'))
+#    server_ID = Column(Integer, ForeignKey('servers.ID', ondelete='CASCADE'))
 
 
 class UserReputation(Model):
@@ -43,7 +44,8 @@ class Servers(Model):
     ID = Column(Integer, primary_key=True, autoincrement=True)
     server_id = Column(Integer)
     users = relationship('Users', secondary='users_servers', back_populates="servers")
-    roles = relationship("Roles", secondary='roles_servers', back_populates="servers")
+    #roles = relationship("Roles", secondary='roles_servers', back_populates="servers")
+    roles = relationship("Roles", backref="server")
 
 
 class Users(Model):
@@ -64,10 +66,12 @@ class Roles(Model):
     ID = Column(Integer, primary_key=True, autoincrement=True)
     role_id = Column(Integer)
     name = Column(String)
-    servers = relationship('Servers', secondary='roles_servers', back_populates="roles")
+    level_match = Column(Integer)
+    # servers = relationship('Servers', secondary='roles_servers', back_populates="roles")
+    server_ID = Column(Integer, ForeignKey('servers.ID', ondelete='CASCADE'))
     users = relationship('Users', secondary='users_roles', back_populates="roles")
 
-# user_roles = Table('users_roles', 
+# user_roles = Table('users_roles',
 #     Column(Integer, primary_key = True, autoincrement=True),                
 #     Column('user_id', Integer, ForeignKey('Users.ID')),
 #     Column('role_id', Integer, ForeignKey('oles.ID')))

@@ -111,4 +111,9 @@ async def match(ctx: discord.ext.commands.Context):
     await command.match(ctx)
 
 
+@bot.command(name='level')
+async def level(ctx: discord.ext.commands.Context):
+    await command.level(ctx, color)
+
+
 bot.run(settings[Settings_enum.TOKEN.value])

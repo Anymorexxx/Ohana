@@ -15,3 +15,7 @@ class ICommands(ABC):
     @abstractmethod
     async def match(self, ctx):
         pass
+
+    @abstractmethod
+    def level(self, ctx, color):
+        pass
