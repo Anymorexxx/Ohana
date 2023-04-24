@@ -19,10 +19,13 @@ settings = {
     'defaultRole': 1097949456030253096,
     'threshold': 350,
     'creator': 503605638484721676,
-    'points_by_word': 1,
-    'min_word_size': 4,
+    'points_by_word': 0.5,
+    'min_word_size': 5,
     'max_word_size': 13,
-    'points_by_second': 1/(120*60)
+    'points_by_second': 1 / (120 * 60),
+    'reputation_cooldown': 5,
+    'max_level': 10,
+    'min_level': -2
 }
 
 
@@ -47,4 +50,6 @@ class SettingsEnum(Enum):
     MIN_WORD_SIZE = 'min_word_size'
     MAX_WORD_SIZE = 'max_word_size'
     POINTS_BY_SECOND = 'points_by_second'
-
+    REPUTATION_COOLDOWN = 'reputation_cooldown'
+    MAX_LEVEL = 'max_level'
+    MIN_LEVEL = 'min_level'

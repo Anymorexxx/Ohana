@@ -1,14 +1,10 @@
-import discord
-
 from Extensions.logEmbedCreator import create_message_deleted_embed, create_message_edited_embed, \
-    show_moder_updated_role, create_chanel_created_embed, create_chanel_delete_embed, create_role_create_embed, \
+    create_chanel_created_embed, create_chanel_delete_embed, create_role_create_embed, \
     create_role_deleted_embed, create_role_updated_embed, create_member_deleted_roles_embed, \
     create_member_added_roles_embed, create_member_update_nickname_embed
 from Loggers.ILogger import ILogger
 from discord import Message
 from discord.ext import commands
-import datetime
-from datetime import datetime
 
 
 class DefaultLogger(ILogger):
@@ -21,15 +17,20 @@ class DefaultLogger(ILogger):
         self.log = log
 
     async def message_deleted(self, message: Message):
+        if message.author.guild is None:
+            return
         embed = create_message_deleted_embed(message, self.color)
         channel = self.bot.get_channel(self.chat)
         await channel.send(embed=embed)
 
     async def message_edited(self, message_before: Message, message_after: Message):
-        embed = create_message_edited_embed(before_message=message_before, after_message=message_after,
-                                            color=self.color)
-        channel = self.bot.get_channel(self.chat)
-        await channel.send(embed=embed)
+        if message_after.author.guild is None:
+            return
+        if message_after.content != message_before.content:
+            embed = create_message_edited_embed(before_message=message_before, after_message=message_after,
+                                                color=self.color)
+            channel = self.bot.get_channel(self.chat)
+            await channel.send(embed=embed)
 
     async def chanel_created(self, channel):
         embed = create_chanel_created_embed(channel, self.color)
